@@ -1,0 +1,42 @@
+2008-03-10 Finally, release 1.2 is released on sourceforge. Source code has been available for some time, but now there is the .deb too
+
+	* Verilog code generaot has been update. Only RRBB is supported, but
+	  synthesis can be done now.
+
+2008-02-07 Trying to use subversion keyword stuff
+
+2008-02-07 Renaming version number schema from Ubuntu ugly style to Debian style
+
+2007-03-08 Version 7.03 released
+
+	* Verilog code generator for RRBB added.
+	
+	* Bug fixed in the generation of "if" statements conditions in the C++
+	  code generator.
+	
+	* Copyright note of UPC added.
+
+2007-01-25 Version 7.01 released
+
+2007-01-25 SVN repository create on sourceforge.net
+
+2006-05-05  Copyright and License terms
+
+	* ACMgen is now copyrighted and licensed under the GNU GPL 2.0. This was
+	  needed cause from today Java is also GPLed.
+	
+	* Copyright and License terms added to the source code.
+
+2006-05-27  Porting everything to UTF-8
+	
+2006-05-04  Repository restarted
+
+	* The repository is going to be restarted
+
+2006-05-04  Debian package stuff added
+
+	* The Debian packages stuff was added
+
+2006-05-03  Added support to GTK
+
+	* GTK gui created with glade

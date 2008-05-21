@@ -1,0 +1,10 @@
+Package: acmgen
+Version: 1.2
+Section: devel
+Priority: optional
+Architecture: i386
+Depends: bash (>= 2.05a-11), libcommons-cli-java (>= 1.1-1), libglade-java (>= 2.12.8-4), libgnome-java (>= 2.12.7-3), libgtk-java (>= 2.10.2-4), libgtk-jni (>= 2.10.2-4+b1)
+Maintainer: Kyller Costa Gorgonio <kyllercg@kyllercg.net>
+Description: ACM code generator
+ ACMgen is a automation tool that generates C++ code, SMV models and Petri net
+ models for a number of classes of Asynchronous Communication Mechanisms (ACMs).

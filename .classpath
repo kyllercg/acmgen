@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<classpath>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="src" output="build/DEBIAN" path="DEBIAN"/>
+	<classpathentry kind="src" output="build/usr/bin" path="bin"/>
+	<classpathentry kind="src" output="build/usr/share" path="share"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
+	<classpathentry kind="lib" path="/usr/share/java/gtk2.10.jar"/>
+	<classpathentry kind="lib" path="/usr/share/java/glade2.12.jar"/>
+	<classpathentry kind="lib" path="/usr/share/java/glib0.4.jar"/>
+	<classpathentry kind="lib" path="/usr/share/java/commons-cli.jar"/>
+	<classpathentry kind="lib" path="/usr/share/java/gnome2.12.jar"/>
+	<classpathentry kind="output" path="build/usr/share/acmgen"/>
+</classpath>

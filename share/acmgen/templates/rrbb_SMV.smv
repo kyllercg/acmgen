@@ -1,0 +1,155 @@
+#define true		1
+#define false		0
+
+#define ACM_SIZE	%%%ACMgen:ACM_SIZE%%%
+typedef ACM 		0..(ACM_SIZE - 1);
+
+module writer_p(writer, reader, rd_data, wr_cont, acm, wr_data, acm2) {
+	
+	case {
+		writer = idle & wr_cont < ACM_SIZE:
+		{
+			next(writer) := accessing;
+			next(reader) := reader;
+			next(rd_data) := rd_data;
+			next(wr_cont) := wr_cont;
+			for (i = 0; i < ACM_SIZE; i = i + 1) {
+				if (i = wr_cont) {
+					next(acm[i]) := wr_data;
+				} else {
+					next(acm[i]) := acm[i];
+				}
+			}
+			-- next(wr_data) := wr_data;
+			next(acm2) := acm;
+		}
+		
+		writer = accessing:
+		{
+			next(writer) := idle;
+			next(reader) := reader;
+			next(rd_data) := rd_data;
+			next(wr_cont) := wr_cont + 1;
+			next(acm) := acm;
+			-- next(wr_data) := ~wr_data;
+			next(acm2) := acm;
+		}
+	}
+}
+
+module reader_p(writer, reader, rd_data, wr_cont, acm, wr_data, acm2) {
+
+	case {
+		
+		reader = idle:
+		{
+			next(writer) := writer;
+			next(reader) := accessing;
+			next(rd_data) := acm[0];
+			next(wr_cont) := wr_cont;
+			next(acm) := acm;
+			-- next(wr_data) := wr_data;
+			next(acm2) := acm;
+		}
+		
+		reader = accessing & wr_cont = 1:
+		{
+			next(writer) := writer;
+			next(reader) := idle;
+			next(rd_data) := rd_data;
+			next(wr_cont) := wr_cont;
+			next(acm) := acm;
+			-- next(wr_data) := wr_data;
+			next(acm2) := acm;
+		}
+		
+		reader = accessing & wr_cont > 1:
+		{
+			next(writer) := writer;
+			next(reader) := idle;
+			next(rd_data) := rd_data;
+			next(wr_cont) := wr_cont - 1;
+			for (i = 0; i < ACM_SIZE-1; i = i + 1) {
+				next(acm[i]) := acm[i + 1];
+			}
+			-- next(wr_data) := wr_data;
+			next(acm2) := acm;
+		}
+	}
+}
+
+module main() {
+	
+	-- variables declarations
+	writer, reader: {idle,accessing};
+	
+	acm, acm2: array ACM of boolean;
+
+	wr_data, rd_data: boolean;
+	wr_cont: 0..ACM_SIZE;
+
+	-- init(rd_data) := wr_data;
+
+	-- Specification
+	layer rrbb: {
+		
+		init(writer) := idle;
+		init(reader) := idle;
+		
+		-- init(rd_data) := wr_data;
+		
+		init(acm[0]) := wr_data;
+		init(wr_cont) := 1;
+		init(acm2) := acm;
+		next(acm2) := acm;
+		
+		wrp: process writer_p(writer, reader, rd_data, wr_cont, acm, wr_data, acm2);
+		rdp: process reader_p(writer, reader, rd_data, wr_cont, acm, wr_data, acm2);
+		
+		case {
+			wr_cont < ACM_SIZE | writer = accessing: {
+				wrp.running := {0,1};
+				rdp.running := ~wrp.running;
+			}
+			
+			default: {
+				wrp.running := 0;
+				rdp.running := 1;
+			}
+		}
+	}
+	
+-- %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -- %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% --
+	
+	-- ------------------------------------------------------------------
+	-- FAIRNESS CONSTRAINTS
+	
+	FAIRNESS wrp.running;
+	FAIRNESS rdp.running;
+	-- ------------------------------------------------------------------
+	-- ------------------------------------------------------------------
+	-- CTL PROPERTIES
+	
+	-- --------- --
+	-- COHERENCE --
+	-- --------- --
+	
+	SPEC AG(reader = accessing -> (rd_data = acm[0] & wr_cont > 0));
+	-- SPEC EF(wr_cont = 0);
+	-- SPEC EF(wr_cont > ACM_SIZE);
+	
+	-- --------- --
+	-- FRESHNESS --
+	-- --------- --
+	
+	-- sequencing properties for wr_cont = 1
+	SPEC AG(wr_cont = 1 ->
+			AX((wr_cont >= 1 & acm[0] = acm2[0])));
+	-- sequencing properties for wr_cont = 2
+	SPEC AG(wr_cont = 2 ->
+			AX((wr_cont >= 2 & acm[0..1] = acm2[0..1]) ||
+			   (wr_cont = 1  & acm[0] = acm2[1])));
+%%%ACMgen:FRESHNESS%%%
+
+	-- ------------------------------------------------------------------
+}

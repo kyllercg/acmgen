@@ -1,0 +1,224 @@
+-- $Id: owrrbb_SMV_PN.smv,v 1.5 2006-08-08 20:00:03 kyller Exp $
+
+#define true		1
+#define false		0
+
+#define ACM_SIZE	%%%ACMgen:ACM_SIZE%%%
+#define SP_SIZE		(ACM_SIZE + 1)
+typedef SP_ACM		0..(SP_SIZE - 1);
+typedef ACM			0..(ACM_SIZE - 1);
+
+module writer_p(writer, reader, rd_data, wr_cont, acm, wr_data, ow) {
+	
+	case {
+		writer = idle & wr_cont < SP_SIZE:
+		{
+			next(writer) := accessing;
+			next(reader) := reader;
+			next(rd_data) := rd_data;
+			next(wr_cont) := wr_cont;
+			for (i = 0; i < SP_SIZE; i = i + 1) {
+				if (i = wr_cont) {
+					next(acm[i]) := wr_data;
+				} else {
+					next(acm[i]) := acm[i];
+				}
+			}
+			-- next(acm2) := acm;
+			next(ow) := ow;
+		}
+		
+		writer = accessing:
+		{
+			next(writer) := idle;
+			next(reader) := reader;
+			next(rd_data) := rd_data;
+			next(wr_cont) := wr_cont + 1;
+			next(acm) := acm;
+			-- next(acm2) := acm;
+			next(ow) := ow;
+		}
+
+		writer = idle & reader = idle & wr_cont = SP_SIZE:
+		{
+			next(writer) := accessing;
+			next(reader) := reader;
+			next(rd_data) := rd_data;
+			next(wr_cont) := wr_cont - 1;
+			for (i = 0; i < SP_SIZE; i = i + 1) {
+				if (i = (SP_SIZE - 1)) {
+					next(acm[i]) := wr_data;
+				} else {
+					next(acm[i]) := acm[i + 1];
+				}
+			}
+			-- next(acm2) := acm;
+			next(ow) := 1;
+		}
+
+		writer = idle & reader = accessing & wr_cont = SP_SIZE:
+		{
+			next(writer) := accessing;
+			next(reader) := reader;
+			next(rd_data) := rd_data;
+			next(wr_cont) := wr_cont - 1;
+			next(acm[0]) := acm[0];
+			for (i = 1; i < SP_SIZE; i = i + 1) {
+				if (i = (SP_SIZE - 1)) {
+					next(acm[i]) := wr_data;
+				} else {
+					next(acm[i]) := acm[i + 1];
+				}
+			}
+			-- next(acm2) := acm;
+			next(ow) := 1;
+		}
+	}
+}
+
+module reader_p(writer, reader, rd_data, wr_cont, acm, wr_data, ow) {
+
+	case {
+		
+		reader = idle:
+		{
+			next(writer) := writer;
+			next(reader) := accessing;
+			next(rd_data) := acm[0];
+			next(wr_cont) := wr_cont;
+			next(acm) := acm;
+			-- next(acm2) := acm;
+			next(ow) := ow;
+		}
+		
+		reader = accessing & ow = 1:
+		{
+			next(ow) := [0,1];
+			if (next(ow) = 1) {
+				
+				next(writer) := writer;
+				next(reader) := reader;
+				next(rd_data) := rd_data;
+				next(wr_cont) := wr_cont;
+				next(acm) := acm;
+				-- next(acm2) := acm;
+			} else if (next(ow) = 0 & wr_cont > 1) {
+			
+				next(writer) := writer;
+				next(reader) := idle;
+				next(rd_data) := rd_data;
+				next(wr_cont) := wr_cont - 1;
+				for (i = 0; i < SP_SIZE-1; i = i + 1) {
+					next(acm[i]) := acm[i + 1];
+				}
+				-- next(acm2) := acm;
+			} else if (next(ow) = 0 & wr_cont = 1) {
+			
+				next(writer) := writer;
+				next(reader) := idle;
+				next(rd_data) := rd_data;
+				next(wr_cont) := wr_cont;
+				next(acm) := acm;
+				-- next(acm2) := acm;
+			}
+		}
+		
+		reader = accessing & wr_cont = 1:
+		{
+			next(writer) := writer;
+			next(reader) := idle;
+			next(rd_data) := rd_data;
+			next(wr_cont) := wr_cont;
+			next(acm) := acm;
+			-- next(acm2) := acm;
+			next(ow) := ow;
+		}
+		
+		reader = accessing & wr_cont > 1:
+		{
+			next(writer) := writer;
+			next(reader) := idle;
+			next(rd_data) := rd_data;
+			next(wr_cont) := wr_cont - 1;
+			for (i = 0; i < SP_SIZE-1; i = i + 1) {
+				next(acm[i]) := acm[i + 1];
+			}
+			-- next(acm2) := acm;
+			next(ow) := ow;
+		}
+	}
+}
+
+module main() {
+	
+	-- variables declarations
+	writer, reader: {idle,accessing};
+	
+	acm: array SP_ACM of boolean;
+	acmI: array ACM of array 0..1 of boolean;
+	
+	wr_data, rd_data: boolean;
+	ow: boolean;
+	wr_cont: 0..SP_SIZE;
+	
+	-- Specification
+	layer rrbb: {
+		
+		init(writer) := idle;
+		init(reader) := idle;
+		
+		init(rd_data) := 1;
+		init(wr_cont) := 1;
+		init(ow) := 0;
+		
+		init(acm[0]) := 1;
+		
+		wrp: process writer_p(writer, reader, rd_data, wr_cont, acm, wr_data, ow);
+		rdp: process reader_p(writer, reader, rd_data, wr_cont, acm, wr_data, ow);
+		
+		wrp.running := {0,1};
+		rdp.running := ~wrp.running;
+	}
+	
+	-- Implementation
+	
+	init(wr_data) := 1;
+	init(rd_data) := 1;
+	
+	init(acmI[0][1]) := 1;
+	
+%%%ACMgen:PEP_OUTPUT%%%
+	
+-- %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% -- %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% --
+	
+	-- ------------------------------------------------------------------
+	-- FAIRNESS CONSTRAINTS
+	
+	FAIRNESS wrp.running;
+	FAIRNESS rdp.running;
+	-- ------------------------------------------------------------------
+	-- ------------------------------------------------------------------
+	-- CTL PROPERTIES
+	
+	-- --------- --
+	-- COHERENCE --
+	-- --------- --
+	
+	SPEC AG(reader = accessing -> (rd_data = acm[0] & wr_cont > 0));
+	
+	-- --------- --
+	-- FRESHNESS -- No FRESHNESS here, causes segmentation fault on SMV
+	-- --------- --
+	
+	-- sequencing properties for wr_cont = 1
+	-- SPEC AG(wr_cont = 1 ->
+			-- AX((wr_cont >= 1 & acm[0] = acm2[0])));
+	-- sequencing properties for wr_cont = 2
+	-- SPEC AG(wr_cont = 2 ->
+			-- AX((wr_cont >= 2 & acm[0..1] = acm2[0..1]) ||
+			   -- (wr_cont = 1  & acm[0] = acm2[1]) ||
+			   -- (wr_cont = 1  & acm[0] = acm2[0])));
+
+	-- ------------------------------------------------------------------
+}
+
